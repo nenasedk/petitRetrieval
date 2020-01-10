@@ -1,0 +1,298 @@
+"""
+Retrieval Class
+
+author: Evert Nasedkin
+contact: nasedkinevert@gmail.com
+"""
+import numpy as np
+from matplotlib import pyplot as plt
+import sys, os
+import json
+
+from config import parameters,fstar,WRITE_THRESHOLD,IS_COMPANION
+from util import show
+
+from petitRADTRANS import Radtrans
+import master_retrieval_model as rm
+from petitRADTRANS import nat_cst as nc
+import rebin_give_width as rgw
+from scipy.interpolate import interp1d
+
+# Declare diagnostics
+function_calls = 0
+computed_spectra = 0
+NaN_spectra = 0
+write_threshold =  delta_wt = WRITE_THRESHOLD
+
+class Retrieval:
+    def __init__(self,
+                 data_obj,
+                 rt_obj,
+                 prior_obj,
+                 planet_radius,
+                 star_radius,
+                 name_in = "",
+                 data_path = "",
+                 output_path= "",
+                 live = 1000,
+                 plotting = False,
+                 diagnostics = False):
+        """
+        Retrieval Class
+        
+        This class implements the Prior and Loglikelihood functions
+        as required by pyMultinest.
+        
+        The Prior function takes in samples from a unit hypercube of ndim 
+        dimensions, and transforms them to physical parameter space. The actual 
+        prior functions used for this are located in util.
+        
+        The Loglikelihood function takes a vector of parameters sampled from the 
+        unit hypercube and transformed by the prior function, and uses these 
+        parameters to compute a model spectrum using petitRadTrans.This model is 
+        then compared to data to compute the loglikelihood.
+        
+        Parameters
+        ------------------------
+        data_obj: Data
+            An instance of the Data class implemented in data.py. This class stores
+            the measured flux in each wavelength bin.
+        rt_obj: Radtrans
+            An instance of the Radtrans class implemented by petitRadTrans. This object
+            is used to compute a model atmospheric spectrum given parameters
+        prior_obj: Prior
+            An instance of the Prior class implemented in priors.py. It contains the
+            dictionary of prior functions used to transform the unit hypercube sample
+            space.
+        planet_radius: float
+            The radius of the planet/brown dwarf in jupiter radii.
+        star_radius: float
+            If we are considering a companion, this is the radius of the host star in solar radii.
+        name_in: str
+            Name for outputting files.
+        data_path: str
+            Location of data files. Not needed.
+        output_path: str
+            Location of output files.
+        live: int
+            Number of live points used for sampling in Multinest
+        plotting: bool
+            Plot figures while running. Do not use if running full retrieval
+        diagnostics: bool
+            Print information about each sample. Do not use for full retrieval
+        
+        Returns
+        ------------------
+        Prior and loglikelihood functions to be used by pymultinest
+        """
+        self.data = data_obj
+        self.rt_obj = rt_obj
+        self.prior_obj = prior_obj
+        self.data_directory = data_path
+        self.output_directory = output_path
+        self.name_in = name_in
+
+        self.R_pl = planet_radius
+        self.R_star = star_radius
+
+        self.live = live
+        self.plotting = plotting
+        self.diagnostics = diagnostics
+        self.ndim = self.prior_obj.n_params
+        self.analyzer = None
+        return
+    
+    def Prior(self,cube,ndim,nparam):
+        """
+        Prior
+
+        This function transforms samples from the unit hypercube to samples
+        from an arbitrary distribution specified by the prior_obj.
+        
+        For example, to generate a uniform distribution between hi and lo
+        cube[0] = cube[0] * (hi - lo) + lo
+        
+        Most priors are based on 
+        https://github.com/JohannesBuchner/MultiNest/blob/master/src/priors.f90
+
+        Parameters
+        --------------------
+        cube: ndarray?
+             Actually a ctype pointer or something. Use like a np array. A vector of ndim samples 
+             from the unit hypercube, with each entry in [0,1]
+        ndim:
+             Number of dimensions, typically equal to nparam
+        nparam:
+             Total number of parameters, can be different from ndim if not all are being sampled
+        """
+        ind = 0
+        for key in self.prior_obj.log_priors.keys():
+            # This is a dictionary of lambda functions that will output the correct transformed sample
+            cube[ind] = self.prior_obj.priors[key](cube[ind])
+            ind += 1
+            
+    def LogLikelihood(self,cube,ndim,nparam):
+        return self.computeLogLikelihood(cube,ndim)
+    
+    def computeLogLikelihood(self,cube,ndim):
+        """
+        computeLogLikelihood
+
+        This function implements the log-likelihood function for an emission spectra
+        using a petitRadTrans model. It is more fully described in:
+        https://arxiv.org/abs/1904.11504,
+        https://petitradtrans.readthedocs.io/en/latest/content/notebooks/ret_emission_master.html
+
+        Parameters
+        -------------------
+        cube: ndarray?
+            The transformed samples from the unit hypercube, transformed by Prior
+        ndim: int
+            Number of dimensions
+        """
+        params = []
+        for i in range(ndim):
+            params.append(cube[i])
+        params = np.array(params)        
+        log_delta, log_gamma, t_int, t_equ, log_p_trans, alpha, \
+        log_g, log_P0 = params[:-8]
+
+        # Make dictionary for modified Guillot parameters
+        temp_params = {}
+        temp_params['log_delta'] = log_delta
+        temp_params['log_gamma'] = log_gamma
+        temp_params['t_int'] = t_int
+        temp_params['t_equ'] = t_equ
+        temp_params['log_p_trans'] = log_p_trans
+        temp_params['alpha'] = alpha
+        
+        # Make dictionary for log 'metal' abundances
+        ab_metals = {}
+        ab_metals['CO_all_iso']     = params[-8:][0]
+        ab_metals['H2O']            = params[-8:][1]
+        ab_metals['CH4']            = params[-8:][2]
+        ab_metals['NH3']            = params[-8:][3]
+        ab_metals['CO2']            = params[-8:][4]
+        ab_metals['H2S']            = params[-8:][5]
+        ab_metals['Na']             = params[-8:][6]
+        ab_metals['K']              = params[-8:][7]
+
+        if self.diagnostics:
+            global function_calls
+            global computed_spectra
+            global NaN_spectra
+            global write_threshold
+        
+        function_calls += 1
+        
+        # Prior calculation of all input parameters
+        log_prior = 0.
+        
+        # Alpha should not be smaller than -1, this
+        # would lead to negative temperatures!
+        if alpha < -1:
+            return -np.inf
+        
+        for key in temp_params.keys():
+            log_prior += self.prior_obj.log_priors[key](temp_params[key])         
+            log_prior += self.prior_obj.log_priors['log_g'](log_g)
+            log_prior += self.prior_obj.log_priors['log_P0'](log_P0)
+            
+        # Metal abundances: check that their
+        # summed mass fraction is below 1.
+        metal_sum = 0.
+        for name in ab_metals.keys():
+            log_prior += self.prior_obj.log_priors[name](ab_metals[name])
+            metal_sum += 1e1**ab_metals[name]
+                
+        if metal_sum > 1.:
+            log_prior += -np.inf
+                    
+        # Return -inf if parameters fall outside prior distribution
+        if (log_prior == -np.inf):
+            return -np.inf
+    
+        # Calculate the log-likelihood
+        log_likelihood = 0.
+        
+        # Calculate the forward model, this
+        # retur<ns the wavelengths in cm and the flux F_nu
+        # in erg/cm^2/s/Hz
+        wlen, flux_nu = rm.retrieval_model_plain(self.rt_obj, temp_params, log_g,
+                                                 log_P0, self.R_pl, ab_metals)
+
+        # Just to make sure that a long chain does not die
+        # unexpectedly:
+        # Return -inf if forward model returns NaN values
+        if np.sum(np.isnan(flux_nu)) > 0:
+            print("NaN spectrum encountered")
+            if self.diagnostics:
+                NaN_spectra += 1
+            return -np.inf
+            self.n_params = len(self.log_priors.keys())
+
+        # Convert to observation for emission case
+        if IS_COMPANION:
+            flux_star = fstar(wlen)
+            flux_sq   = flux_nu/flux_star*(self.R_pl/self.R_star)**2 
+        else:
+            # TODO - Check to see if this is the correct way to retrieve a field BD
+            # should correct for distance (reduce model by d**-2 or normalize data)
+            # distance should be fixed or floating param?
+            # - probably depends on what data is available (GAIA?)
+            flux_sq = flux_nu 
+            
+        # Calculate log-likelihood
+        for instrument in self.data.data_wlen.keys():
+            # Rebin model to observation
+            flux_rebinned = rgw.rebin_give_width(wlen, flux_sq, \
+                                                 self.data.data_wlen[instrument],\
+                                                 self.data.data_wlen_bins[instrument])
+
+            if self.plotting:
+                plt.errorbar(self.data.data_wlen[instrument], \
+                             self.data.data_flux_nu[instrument], \
+                             self.data.data_flux_nu_error[instrument], \
+                             fmt = 'o', \
+                             zorder = -20, \
+                             color = 'red')
+                
+                plt.plot(self.data.data_wlen[instrument], \
+                         flux_rebinned, \
+                         's', \
+                         zorder = -20, \
+                         color = 'blue')
+                
+            # Calculate log-likelihood
+            log_likelihood += -np.sum(((flux_rebinned - self.data.data_flux_nu[instrument])/ \
+                                       self.data.data_flux_nu_error[instrument])**2.)/2.
+
+        if self.plotting:
+            plt.plot(wlen, flux_sq, color = 'black')
+            plt.xscale('log')
+            plt.show()
+            
+        if self.diagnostics:
+            computed_spectra += 1
+            if (function_calls >= write_threshold):
+                
+                write_threshold += delta_wt
+                #hours = (time.time() - start_time)/3600.0
+                info_list = [function_calls, computed_spectra, NaN_spectra, \
+                             log_prior + log_likelihood, hours] 
+                
+                file_object = open(self.output_directory + 'diag_' + self.name_in + '.dat', 'a')
+
+                for i in np.arange(len(info_list)):
+                    if (i == len(info_list) - 1):
+                        file_object.write(str(info_list[i]).ljust(15) + "\n")
+                    else:
+                        file_object.write(str(info_list[i]).ljust(15) + " ")
+                file_object.close()
+            print(log_prior + log_likelihood)
+            print("--> ", function_calls, " --> ", computed_spectra)
+            
+        if np.isnan(log_prior + log_likelihood):
+            return -np.inf
+        else:
+            return log_likelihood # + log_prior
