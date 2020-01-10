@@ -36,7 +36,10 @@ class Retrieval:
                  output_path= "",
                  live = 1000,
                  plotting = False,
-                 diagnostics = False):
+                 diagnostics = False,
+                 resume = False,
+                 verbose = True,
+                 sampling_efficiency = 0.3):
         """
         Retrieval Class
         
@@ -80,7 +83,12 @@ class Retrieval:
             Plot figures while running. Do not use if running full retrieval
         diagnostics: bool
             Print information about each sample. Do not use for full retrieval
-        
+        resume: bool
+            Pymultinest parameter
+        verbose: bool
+            Pymultinest parameter
+        sampling_efficiency: float [0,1]
+            Pymultinest parameter
         Returns
         ------------------
         Prior and loglikelihood functions to be used by pymultinest
@@ -100,6 +108,10 @@ class Retrieval:
         self.diagnostics = diagnostics
         self.ndim = self.prior_obj.n_params
         self.analyzer = None
+
+        self.resume = resume
+        self.verbose = verbose
+        self.efficiency = sampling_efficiency
         return
     
     def Prior(self,cube,ndim,nparam):

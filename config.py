@@ -5,8 +5,8 @@ from util import *
 # Data Setup
 RETRIEVAL_NAME = 'JWST_emission_g395M_v5'
 INPUT_DIR = 'data/' # end with forward slash!
-OUTPUT_DIR = '/home/ipa/quanz/user_accounts/evertn/AtmoRets/'
-#OUTPUT_DIR = '/home/evert/Documents/ThesisNotebooks/AtmoRets/' 
+#OUTPUT_DIR = '/home/ipa/quanz/user_accounts/evertn/AtmoRets/'
+OUTPUT_DIR = '/home/evert/Documents/ThesisNotebooks/AtmoRets/' 
 
 # Observation file format:
 # wlen (micron), F_pl/F_s, F_pl/F_s (error)
