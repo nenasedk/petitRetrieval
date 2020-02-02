@@ -20,11 +20,12 @@ def calc_MMW(abundances):
     MMWs['K'] = 39.
     MMWs['NH3'] = 17.
     MMWs['HCN'] = 27.
-    MMWs['C2H2,acetylene'] = 26.
+    MMWs['C2H2'] = 26.
     MMWs['PH3'] = 34.
     MMWs['H2S'] = 34.
     MMWs['VO'] = 67.
     MMWs['TiO'] = 64.
+    MMWs['H2S'] = 34.
 
     MMW = 0.
     for key in abundances.keys():

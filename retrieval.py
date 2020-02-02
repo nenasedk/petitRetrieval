@@ -9,8 +9,8 @@ from matplotlib import pyplot as plt
 import sys, os
 import json
 
-from config import parameters,fstar,WRITE_THRESHOLD,IS_COMPANION
-from util import show
+from config import parameters,fstar,WRITE_THRESHOLD,IS_COMPANION,LINE_SPECIES
+from util import show, Surf_To_Meas
 
 from petitRADTRANS import Radtrans
 import master_retrieval_model as rm
@@ -31,13 +31,14 @@ class Retrieval:
                  prior_obj,
                  planet_radius,
                  star_radius,
+                 planet_distance,
                  name_in = "",
                  data_path = "",
                  output_path= "",
                  live = 1000,
                  plotting = False,
                  diagnostics = False,
-                 resume = False,
+                 resume = True,
                  verbose = True,
                  sampling_efficiency = 0.3):
         """
@@ -102,7 +103,8 @@ class Retrieval:
 
         self.R_pl = planet_radius
         self.R_star = star_radius
-
+        self.D_pl = planet_distance
+        
         self.live = live
         self.plotting = plotting
         self.diagnostics = diagnostics
@@ -165,11 +167,13 @@ class Retrieval:
         params = []
         for i in range(ndim):
             params.append(cube[i])
-        params = np.array(params)        
+        params = np.array(params)
+        nlines = len(LINE_SPECIES)
         log_delta, log_gamma, t_int, t_equ, log_p_trans, alpha, \
-        log_g, log_P0 = params[:-8]
+        log_g, log_P0 = params[:-nlines]
 
         # Make dictionary for modified Guillot parameters
+        # TODO: Read in keys from dict
         temp_params = {}
         temp_params['log_delta'] = log_delta
         temp_params['log_gamma'] = log_gamma
@@ -180,22 +184,15 @@ class Retrieval:
         
         # Make dictionary for log 'metal' abundances
         ab_metals = {}
-        ab_metals['CO_all_iso']     = params[-8:][0]
-        ab_metals['H2O']            = params[-8:][1]
-        ab_metals['CH4']            = params[-8:][2]
-        ab_metals['NH3']            = params[-8:][3]
-        ab_metals['CO2']            = params[-8:][4]
-        ab_metals['H2S']            = params[-8:][5]
-        ab_metals['Na']             = params[-8:][6]
-        ab_metals['K']              = params[-8:][7]
+        for i,line in enumerate(LINE_SPECIES):
+            ab_metals[line] = params[-nlines:][i]
 
         if self.diagnostics:
             global function_calls
             global computed_spectra
             global NaN_spectra
-            global write_threshold
-        
-        function_calls += 1
+            global write_threshold   
+            function_calls += 1
         
         # Prior calculation of all input parameters
         log_prior = 0.
@@ -252,8 +249,7 @@ class Retrieval:
             # should correct for distance (reduce model by d**-2 or normalize data)
             # distance should be fixed or floating param?
             # - probably depends on what data is available (GAIA?)
-            flux_sq = flux_nu 
-            
+            flux_sq = Surf_To_Meas(flux_nu,self.R_pl,self.D_pl)
         # Calculate log-likelihood
         for instrument in self.data.data_wlen.keys():
             # Rebin model to observation

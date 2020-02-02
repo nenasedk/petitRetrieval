@@ -65,11 +65,9 @@ temp_params['alpha'] = 0.
 p, t = nc.make_press_temp(temp_params)
 
 # Create the Radtrans object here
-rt_object = Radtrans(line_species=['H2', 'CO_all_iso', 'H2O', \
-                                  'CH4', 'NH3', 'CO2', 'H2S', \
-                                  'Na', 'K'], \
-                    rayleigh_species=['H2','He'], \
-                    continuum_opacities = ['H2-H2','H2-He'], \
+rt_object = Radtrans(line_species=LINE_SPECIES, \
+                    rayleigh_species=RAYLEIGH_SPECIES, \
+                    continuum_opacities = CONTINUUM_OPACITIES, \
                     mode='c-k', \
                     wlen_bords_micron=WLEN)
 rt_object.setup_opa_structure(p)
@@ -98,6 +96,7 @@ retrieval = Retrieval(data_obj = data,
                       prior_obj = prior,
                       planet_radius = R_pl,
                       star_radius = R_star,
+                      planet_distance = D_pl,
                       name_in = RETRIEVAL_NAME,
                       data_path = INPUT_DIR,
                       output_path = RETRIEVAL_NAME + '/',
@@ -109,6 +108,7 @@ retrieval = Retrieval(data_obj = data,
 # outputfiles_basename must be <100 chars
 # https://johannesbuchner.github.io/PyMultiNest/pymultinest_run.html
 # init_MPI should be False even when using MPI for parallelization!
+
 pymultinest.run(retrieval.LogLikelihood,
                 retrieval.Prior,
                 retrieval.ndim,
@@ -175,7 +175,7 @@ print
 ################################################################################
 
 retrieved_parameters_list = np.array(retrieved_parameters_list)
-log_delta, log_gamma, t_int, t_equ, log_p_trans, alpha, log_g, log_P0 = retrieved_parameters_list[:-8]
+log_delta, log_gamma, t_int, t_equ, log_p_trans, alpha, log_g, log_P0 = retrieved_parameters_list[:-1 * len(LINE_SPECIES)]
 
 # Make dictionary for modified Guillot parameters
 temp_params = {}
@@ -188,14 +188,9 @@ temp_params['alpha'] = alpha
 
 # Make dictionary for log 'metal' abundances
 ab_metals = {}
-ab_metals['CO_all_iso']     = retrieved_parameters_list[-8:][0]
-ab_metals['H2O']            = retrieved_parameters_list[-8:][1]
-ab_metals['CH4']            = retrieved_parameters_list[-8:][2]
-ab_metals['NH3']            = retrieved_parameters_list[-8:][3]
-ab_metals['CO2']            = retrieved_parameters_list[-8:][4]
-ab_metals['H2S']            = retrieved_parameters_list[-8:][5]
-ab_metals['Na']             = retrieved_parameters_list[-8:][6]
-ab_metals['K']              = retrieved_parameters_list[-8:][7]
+for i,line in enumerate(LINE_SPECIES):
+    ab_metals[line] = retrieved_parameters_list[-1*len(LINE_SPECIES):][i]
+
 
 ## compute model for retrieved results ##
 wlen, flux_nu = rm.retrieval_model_plain(rt_object, temp_params, log_g, \

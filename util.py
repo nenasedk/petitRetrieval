@@ -22,6 +22,14 @@ def a_b_range(x, a, b):
     else:
         return 0.
 
+# Convert from emission flux to measured flux at earth
+def Surf_To_Meas(flux,p_rad,dist):
+    # Converts ergs cm^-2 s^-1 Hz^-1 to uJy 
+    # Computes from surface emission flux to measured flux at distance dist
+    # Distances must be in the same units
+    m_flux = flux * p_rad**2/dist**2
+    return m_flux*1e29
+
 # Priors stolen from https://github.com/JohannesBuchner/MultiNest/blob/master/src/priors.f90
 def log_prior(cube,lx1,lx2):
     return 10**(lx1+cube*(lx2-lx1))
