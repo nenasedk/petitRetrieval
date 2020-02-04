@@ -30,6 +30,7 @@ pyMultinest - https://arxiv.org/abs/1402.0004
 from __future__ import absolute_import, unicode_literals, print_function
 
 from config import *
+from util import Surf_To_Meas
 from priors import Prior
 from data import Data
 from retrieval import Retrieval
@@ -195,6 +196,7 @@ for i,line in enumerate(LINE_SPECIES):
 ## compute model for retrieved results ##
 wlen, flux_nu = rm.retrieval_model_plain(rt_object, temp_params, log_g, \
                                          log_P0, R_pl, ab_metals)
+flux_nu = Surf_To_Meas(fluxes,R_pl,D_pl.value)
 output = Table([wlen,flux_nu],names = ['wavelength','flux_nu'])
 ascii.write(output, RETRIEVAL_NAME + '/' + RETRIEVAL_NAME + "_BestFitModel.dat", overwrite=True)
 

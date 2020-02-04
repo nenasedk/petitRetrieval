@@ -40,11 +40,10 @@ def calc_MMW(abundances):
 ####################################################################################
 ####################################################################################
 
-def retrieval_model_plain(rt_object, temperature_parameters, log_g, log_P0, \
-                              R_pl, ab_metals):
 
-    gravity = 1e1**log_g    
-    
+def retrieval_model_plain(rt_object, temperature_parameters, R_pl, ab_metals):
+
+    gravity = 1e1**temperature_parameters['log_g']    
     # Create temperature model
     press, temp = nc.make_press_temp(temperature_parameters) # pressures from low to high
 

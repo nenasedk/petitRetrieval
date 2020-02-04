@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import sys, os
 import json
 
-from config import parameters,fstar,WRITE_THRESHOLD,IS_COMPANION,LINE_SPECIES
+from config import *
 from util import show, Surf_To_Meas
 
 from petitRADTRANS import Radtrans
@@ -38,7 +38,7 @@ class Retrieval:
                  live = 1000,
                  plotting = False,
                  diagnostics = False,
-                 resume = True,
+                 resume = False,
                  verbose = True,
                  sampling_efficiency = 0.3):
         """
@@ -169,18 +169,13 @@ class Retrieval:
             params.append(cube[i])
         params = np.array(params)
         nlines = len(LINE_SPECIES)
-        log_delta, log_gamma, t_int, t_equ, log_p_trans, alpha, \
-        log_g, log_P0 = params[:-nlines]
+        nclouds = len(CLOUD_SPECIES)
 
         # Make dictionary for modified Guillot parameters
         # TODO: Read in keys from dict
         temp_params = {}
-        temp_params['log_delta'] = log_delta
-        temp_params['log_gamma'] = log_gamma
-        temp_params['t_int'] = t_int
-        temp_params['t_equ'] = t_equ
-        temp_params['log_p_trans'] = log_p_trans
-        temp_params['alpha'] = alpha
+        for i,param in enumerate(ATMOSPHERE):
+            temp_params[param] = params[i]
         
         # Make dictionary for log 'metal' abundances
         ab_metals = {}
@@ -199,13 +194,13 @@ class Retrieval:
         
         # Alpha should not be smaller than -1, this
         # would lead to negative temperatures!
-        if alpha < -1:
+        if temp_params['alpha'] < -1:
             return -np.inf
         
         for key in temp_params.keys():
             log_prior += self.prior_obj.log_priors[key](temp_params[key])         
-            log_prior += self.prior_obj.log_priors['log_g'](log_g)
-            log_prior += self.prior_obj.log_priors['log_P0'](log_P0)
+            log_prior += self.prior_obj.log_priors['log_g'](temp_params['log_g'])
+            log_prior += self.prior_obj.log_priors['log_P0'](temp_params['log_P0'])
             
         # Metal abundances: check that their
         # summed mass fraction is below 1.
@@ -227,8 +222,7 @@ class Retrieval:
         # Calculate the forward model, this
         # retur<ns the wavelengths in cm and the flux F_nu
         # in erg/cm^2/s/Hz
-        wlen, flux_nu = rm.retrieval_model_plain(self.rt_obj, temp_params, log_g,
-                                                 log_P0, self.R_pl, ab_metals)
+        wlen, flux_nu = rm.retrieval_model_plain(self.rt_obj, temp_params, self.R_pl, ab_metals)
 
         # Just to make sure that a long chain does not die
         # unexpectedly:

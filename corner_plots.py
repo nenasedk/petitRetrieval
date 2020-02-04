@@ -36,4 +36,4 @@ class CornerPlot:
                 plt.ylabel(parameters[j])
                 
         plt.savefig(self.output_directory + output_name + ".pdf") #, bbox_inches='tight')
-        show(self.output_directory + output_name +".pdf")
+        #show(self.output_directory + output_name +".pdf")
