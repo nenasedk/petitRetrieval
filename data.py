@@ -1,5 +1,5 @@
 import numpy as np
-import spectres as spectres
+from spectres import spectres
 class Data:
     def __init__(self,
                  observation_files,
@@ -61,7 +61,10 @@ class Data:
     
     def rebinData(self,new_wlen_bins):
         for name in self.observation_files.keys():
-            self.data_flux_new[name], self.data_flux_nu_error[name] = \
+            print(name + " before " + str(len(self.data_wlen[name])))
+            self.data_flux_nu[name], self.data_flux_nu_error[name] = \
                 spectres(new_wlen_bins,self.data_wlen[name],\
-                         self.data_flux_nu[name],self.data_flux_new_error[name])
+                         self.data_flux_nu[name],self.data_flux_nu_error[name])
             self.data_wlen[name] = new_wlen_bins
+            print(name + "after" + str(len(self.data_wlen[name])))
+

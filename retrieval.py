@@ -195,13 +195,20 @@ class Retrieval:
         # Alpha should not be smaller than -1, this
         # would lead to negative temperatures!
         if temp_params['alpha'] < -1:
+            if self.diagnostics:
+                print("Alpha too small!")
             return -np.inf
         
         for key in temp_params.keys():
             log_prior += self.prior_obj.log_priors[key](temp_params[key])         
             log_prior += self.prior_obj.log_priors['log_g'](temp_params['log_g'])
             log_prior += self.prior_obj.log_priors['log_P0'](temp_params['log_P0'])
-            
+            if log_prior == -np.inf:
+                if self.diagnostics:
+                    print(self.prior_obj.log_priors[key](temp_params[key]),\
+                          self.prior_obj.log_priors['log_g'](temp_params['log_g']),\
+                          self.prior_obj.log_priors['log_P0'](temp_params['log_P0']))
+                return -np.inf
         # Metal abundances: check that their
         # summed mass fraction is below 1.
         metal_sum = 0.
@@ -210,6 +217,8 @@ class Retrieval:
             metal_sum += 1e1**ab_metals[name]
                 
         if metal_sum > 1.:
+            if self.diagnostics:
+                print("Metal sum > 1")
             log_prior += -np.inf
                     
         # Return -inf if parameters fall outside prior distribution
@@ -233,7 +242,6 @@ class Retrieval:
                 NaN_spectra += 1
             return -np.inf
             self.n_params = len(self.log_priors.keys())
-
         # Convert to observation for emission case
         if IS_COMPANION:
             flux_star = fstar(wlen)
@@ -250,7 +258,6 @@ class Retrieval:
             flux_rebinned = rgw.rebin_give_width(wlen, flux_sq, \
                                                  self.data.data_wlen[instrument],\
                                                  self.data.data_wlen_bins[instrument])
-
             if self.plotting:
                 plt.errorbar(self.data.data_wlen[instrument], \
                              self.data.data_flux_nu[instrument], \

@@ -35,6 +35,7 @@ from priors import Prior
 from data import Data
 from retrieval import Retrieval
 from corner_plots import CornerPlot
+from PT_envelopes import return_PT_envelopes, plot_PT
 
 import pymultinest
 import numpy as np
@@ -63,6 +64,12 @@ temp_params['t_int'] = 750.
 temp_params['t_equ'] = 0.
 temp_params['log_p_trans'] = -3.
 temp_params['alpha'] = 0.
+temp_params['log_g'] = 3.0
+temp_params['log_P0'] = 1.
+ab_metals={}
+for metal in LINE_SPECIES:
+    ab_metals[metal] = -5
+    
 p, t = nc.make_press_temp(temp_params)
 
 # Create the Radtrans object here
@@ -72,13 +79,14 @@ rt_object = Radtrans(line_species=LINE_SPECIES, \
                     mode='c-k', \
                     wlen_bords_micron=WLEN)
 rt_object.setup_opa_structure(p)
+#wlen, flux_nu = rm.retrieval_model_plain(rt_object, temp_params, R_pl, ab_metals)
 
 # Read in data and convert to CGS
 data = Data(observation_files,
             RETRIEVAL_NAME,
             INPUT_DIR,
             OUTPUT_DIR + RETRIEVAL_NAME + '/')
-
+#data.rebinData(wlen)
 # Ensure output directories exist, and change to output dir to shorten path name
 # Multinest has a 100 char limit for paths (recently updated to 1000?)
 if not os.path.exists(OUTPUT_DIR + RETRIEVAL_NAME + "/"):
@@ -109,7 +117,7 @@ retrieval = Retrieval(data_obj = data,
 # outputfiles_basename must be <100 chars
 # https://johannesbuchner.github.io/PyMultiNest/pymultinest_run.html
 # init_MPI should be False even when using MPI for parallelization!
-
+"""
 pymultinest.run(retrieval.LogLikelihood,
                 retrieval.Prior,
                 retrieval.ndim,
@@ -120,7 +128,7 @@ pymultinest.run(retrieval.LogLikelihood,
                 sampling_efficiency = retrieval.efficiency, # 0.3 for parameter est, 0.8 for model comp
                 importance_nested_sampling=True, # True has higher memory requirements
                 write_output=True)    
-
+"""
 # Read output files for analysis
 a = pymultinest.Analyzer(outputfiles_basename=retrieval.output_directory \
                                 + retrieval.name_in + '_', n_params=retrieval.ndim)
@@ -176,16 +184,12 @@ print
 ################################################################################
 
 retrieved_parameters_list = np.array(retrieved_parameters_list)
-log_delta, log_gamma, t_int, t_equ, log_p_trans, alpha, log_g, log_P0 = retrieved_parameters_list[:-1 * len(LINE_SPECIES)]
+#log_delta, log_gamma, t_int, t_equ, log_p_trans, alpha, log_g, log_P0 = retrieved_parameters_list[:-1* len(LINE_SPECIES)]
 
 # Make dictionary for modified Guillot parameters
 temp_params = {}
-temp_params['log_delta'] = log_delta
-temp_params['log_gamma'] = log_gamma
-temp_params['t_int'] = t_int
-temp_params['t_equ'] = t_equ
-temp_params['log_p_trans'] = log_p_trans
-temp_params['alpha'] = alpha
+for i,param in enumerate(ATMOSPHERE):
+    temp_params[param] = retrieved_parameters_list[i]
 
 # Make dictionary for log 'metal' abundances
 ab_metals = {}
@@ -194,19 +198,29 @@ for i,line in enumerate(LINE_SPECIES):
 
 
 ## compute model for retrieved results ##
-wlen, flux_nu = rm.retrieval_model_plain(rt_object, temp_params, log_g, \
-                                         log_P0, R_pl, ab_metals)
-flux_nu = Surf_To_Meas(fluxes,R_pl,D_pl.value)
+wlen, flux_nu = rm.retrieval_model_plain(rt_object, temp_params, R_pl, ab_metals)
+flux_nu = Surf_To_Meas(flux_nu,R_pl,D_pl)
 output = Table([wlen,flux_nu],names = ['wavelength','flux_nu'])
 ascii.write(output, RETRIEVAL_NAME + '/' + RETRIEVAL_NAME + "_BestFitModel.dat", overwrite=True)
 
 # Corner plots
-plots = CornerPlot(analyzer = a,
-                   name_in = RETRIEVAL_NAME + "_corner_plots",
-                   input_directory = RETRIEVAL_NAME + '/',
-                   output_directory = RETRIEVAL_NAME + '/',
-                   ndim = prior.n_params)
-plots.basic_plot(RETRIEVAL_NAME + "_marginals")
+# use pymultinest_marginals_corner
+#plots = CornerPlot(analyzer = a,
+#                   name_in = RETRIEVAL_NAME + "_corner_plots",
+#                   input_directory = RETRIEVAL_NAME + '/',
+#                   output_directory = RETRIEVAL_NAME + '/',
+#                   ndim = prior.n_params)
+#plots.basic_plot(RETRIEVAL_NAME + "_marginals")
 
+# P-T profile
+# FIXME add truth value inputs
+# FIXME check that samples are the same in pymultinest and emcee
+envelopes = return_PT_envelopes(samples,
+                                envelope_file = OUTPUT_DIR + RETRIEVAL_NAME + '/' +\
+                                RETRIEVAL_NAME+ "_PT_env.pickle",
+                                N_samples = len(samples),
+                                read = False,
+                                true_values = None)
+plot_PT(envelopes,OUTPUT_DIR + RETRIEVAL_NAME + '/',RETRIEVAL_NAME)
 end = time.time()
 print("time = ",end-start)

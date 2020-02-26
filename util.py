@@ -45,6 +45,8 @@ def log_gaussian_prior(cube,mu,sigma):
     bracket = sigma*sigma + sigma*SQRT2*erfcinv(2.0*cube)
     return bracket
 
+def delta_prior(cube,x1,x2):
+    return x1
 def show(filepath): 
     """ open the output (pdf) file for the user """
     if os.name == 'mac' or platform == 'darwin': subprocess.call(('open', filepath))
