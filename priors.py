@@ -19,6 +19,8 @@ class Prior:
             This dictionary stores sanity checks on parameter ranges
             for uniform priors, and computes the exponent of a gaussian
             distribution for gaussian distributed parameters
+            *** update ***
+            This is now the RANGE dictionary from the config file. Just a name change.
         prior_dict: dict
             This dictionary stores the actual prior functions which transform
             samples from a unit hypercube into physical parameter space.

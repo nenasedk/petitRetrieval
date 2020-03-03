@@ -29,9 +29,6 @@ class Retrieval:
                  data_obj,
                  rt_obj,
                  prior_obj,
-                 planet_radius,
-                 star_radius,
-                 planet_distance,
                  name_in = "",
                  data_path = "",
                  output_path= "",
@@ -68,10 +65,6 @@ class Retrieval:
             An instance of the Prior class implemented in priors.py. It contains the
             dictionary of prior functions used to transform the unit hypercube sample
             space.
-        planet_radius: float
-            The radius of the planet/brown dwarf in jupiter radii.
-        star_radius: float
-            If we are considering a companion, this is the radius of the host star in solar radii.
         name_in: str
             Name for outputting files.
         data_path: str
@@ -100,10 +93,6 @@ class Retrieval:
         self.data_directory = data_path
         self.output_directory = output_path
         self.name_in = name_in
-
-        self.R_pl = planet_radius
-        self.R_star = star_radius
-        self.D_pl = planet_distance
         
         self.live = live
         self.plotting = plotting
@@ -172,11 +161,12 @@ class Retrieval:
         nclouds = len(CLOUD_SPECIES)
 
         # Make dictionary for modified Guillot parameters
-        # TODO: Read in keys from dict
         temp_params = {}
         for i,param in enumerate(ATMOSPHERE):
-            temp_params[param] = params[i]
-        
+            temp_params[param] = params[i] 
+        for key,value in FIXED_PARAMS.items():
+            temp_params[key] = value
+            
         # Make dictionary for log 'metal' abundances
         ab_metals = {}
         for i,line in enumerate(LINE_SPECIES):
@@ -200,15 +190,17 @@ class Retrieval:
             return -np.inf
         
         for key in temp_params.keys():
-            log_prior += self.prior_obj.log_priors[key](temp_params[key])         
-            log_prior += self.prior_obj.log_priors['log_g'](temp_params['log_g'])
-            log_prior += self.prior_obj.log_priors['log_P0'](temp_params['log_P0'])
-            if log_prior == -np.inf:
-                if self.diagnostics:
-                    print(self.prior_obj.log_priors[key](temp_params[key]),\
-                          self.prior_obj.log_priors['log_g'](temp_params['log_g']),\
-                          self.prior_obj.log_priors['log_P0'](temp_params['log_P0']))
-                return -np.inf
+            # Fixed parameters aren't in the prior dictionary
+            if key in self.prior_obj.log_priors:
+                log_prior += self.prior_obj.log_priors[key](temp_params[key])         
+                log_prior += self.prior_obj.log_priors['log_g'](temp_params['log_g'])
+                log_prior += self.prior_obj.log_priors['log_P0'](temp_params['log_P0'])
+                if log_prior == -np.inf:
+                    if self.diagnostics:
+                        print(self.prior_obj.log_priors[key](temp_params[key]),\
+                              self.prior_obj.log_priors['log_g'](temp_params['log_g']),\
+                              self.prior_obj.log_priors['log_P0'](temp_params['log_P0']))
+                    return -np.inf
         # Metal abundances: check that their
         # summed mass fraction is below 1.
         metal_sum = 0.
@@ -231,7 +223,7 @@ class Retrieval:
         # Calculate the forward model, this
         # retur<ns the wavelengths in cm and the flux F_nu
         # in erg/cm^2/s/Hz
-        wlen, flux_nu = rm.retrieval_model_plain(self.rt_obj, temp_params, self.R_pl, ab_metals)
+        wlen, flux_nu = rm.retrieval_model_plain(self.rt_obj, temp_params, ab_metals)
 
         # Just to make sure that a long chain does not die
         # unexpectedly:
@@ -245,13 +237,13 @@ class Retrieval:
         # Convert to observation for emission case
         if IS_COMPANION:
             flux_star = fstar(wlen)
-            flux_sq   = flux_nu/flux_star*(self.R_pl/self.R_star)**2 
+            flux_sq   = flux_nu/flux_star*(temp_params['R_pl']*nc.r_jup_mean/temp_params['R_star'])**2 
         else:
             # TODO - Check to see if this is the correct way to retrieve a field BD
             # should correct for distance (reduce model by d**-2 or normalize data)
             # distance should be fixed or floating param?
             # - probably depends on what data is available (GAIA?)
-            flux_sq = Surf_To_Meas(flux_nu,self.R_pl,self.D_pl)
+            flux_sq = Surf_To_Meas(flux_nu,temp_params['R_pl']*nc.r_jup_mean,temp_params['D_pl'])
         # Calculate log-likelihood
         for instrument in self.data.data_wlen.keys():
             # Rebin model to observation

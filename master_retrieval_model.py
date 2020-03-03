@@ -41,7 +41,7 @@ def calc_MMW(abundances):
 ####################################################################################
 
 
-def retrieval_model_plain(rt_object, temperature_parameters, R_pl, ab_metals):
+def retrieval_model_plain(rt_object, temperature_parameters, ab_metals):
 
     gravity = 1e1**temperature_parameters['log_g']    
     # Create temperature model

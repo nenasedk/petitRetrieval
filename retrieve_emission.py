@@ -66,12 +66,12 @@ temp_params['log_p_trans'] = -3.
 temp_params['alpha'] = 0.
 temp_params['log_g'] = 3.0
 temp_params['log_P0'] = 1.
+temp_params['R_pl'] = 1.
 ab_metals={}
 for metal in LINE_SPECIES:
     ab_metals[metal] = -5
     
 p, t = nc.make_press_temp(temp_params)
-
 # Create the Radtrans object here
 rt_object = Radtrans(line_species=LINE_SPECIES, \
                     rayleigh_species=RAYLEIGH_SPECIES, \
@@ -97,15 +97,12 @@ if not os.path.isfile(OUTPUT_DIR + RETRIEVAL_NAME + "/" + 'ev.dat'):
 os.chdir(OUTPUT_DIR)
 
 # Setup Priors
-prior = Prior(LOG_PRIORS,PRIORS)
+prior = Prior(RANGE,PRIORS)
 
 # Create object to compute priors and log likelihood
 retrieval = Retrieval(data_obj = data,
                       rt_obj = rt_object,
                       prior_obj = prior,
-                      planet_radius = R_pl,
-                      star_radius = R_star,
-                      planet_distance = D_pl,
                       name_in = RETRIEVAL_NAME,
                       data_path = INPUT_DIR,
                       output_path = RETRIEVAL_NAME + '/',
@@ -117,7 +114,7 @@ retrieval = Retrieval(data_obj = data,
 # outputfiles_basename must be <100 chars
 # https://johannesbuchner.github.io/PyMultiNest/pymultinest_run.html
 # init_MPI should be False even when using MPI for parallelization!
-"""
+
 pymultinest.run(retrieval.LogLikelihood,
                 retrieval.Prior,
                 retrieval.ndim,
@@ -128,7 +125,7 @@ pymultinest.run(retrieval.LogLikelihood,
                 sampling_efficiency = retrieval.efficiency, # 0.3 for parameter est, 0.8 for model comp
                 importance_nested_sampling=True, # True has higher memory requirements
                 write_output=True)    
-"""
+
 # Read output files for analysis
 a = pymultinest.Analyzer(outputfiles_basename=retrieval.output_directory \
                                 + retrieval.name_in + '_', n_params=retrieval.ndim)
@@ -205,12 +202,6 @@ ascii.write(output, RETRIEVAL_NAME + '/' + RETRIEVAL_NAME + "_BestFitModel.dat",
 
 # Corner plots
 # use pymultinest_marginals_corner
-#plots = CornerPlot(analyzer = a,
-#                   name_in = RETRIEVAL_NAME + "_corner_plots",
-#                   input_directory = RETRIEVAL_NAME + '/',
-#                   output_directory = RETRIEVAL_NAME + '/',
-#                   ndim = prior.n_params)
-#plots.basic_plot(RETRIEVAL_NAME + "_marginals")
 
 # P-T profile
 # FIXME add truth value inputs
