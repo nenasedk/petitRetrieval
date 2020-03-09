@@ -42,4 +42,5 @@ Where prefix is the prefix prepended to all of the pymultinest output files.
 This will be automated in a future release.
 
 Author: Evert Nasedkin
+
 Contact: nasedkinevert@gmail.com
