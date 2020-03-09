@@ -27,10 +27,7 @@ All prior setup is done in a dictionary in the config file, where priors and bou
 The user must ensure the parameters in the ATMOSPHERE list match those included in the prior dictionary. 
 While the number of Live Points is a user set parameter, it is recommended to use on the order of 50 times the number of free parameters.
 
-Additional consideration should be given to priors.py, which contains the prior distributions for the parameters used, 
-as well as the log-likelihood function.
-
-This code should be run in parallel over a large number of cores. Using MPI, run:
+This code can be run in parallel over a large number of cores. Using MPI, run:
 ```
 mpiexec -n $NUMTHREADS python retrieve_emission.py
 ```
