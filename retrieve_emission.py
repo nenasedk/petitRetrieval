@@ -29,14 +29,19 @@ pyMultinest - https://arxiv.org/abs/1402.0004
 """
 from __future__ import absolute_import, unicode_literals, print_function
 
+# petitRetrieval Files
 from config import *
-from util import Surf_To_Meas
-from priors import Prior
-from data import Data
-from retrieval import Retrieval
-from corner_plots import CornerPlot
-from PT_envelopes import return_PT_envelopes, plot_PT
+from petitRetrieval.priors import Prior
+from petitRetrieval.data import Data
+from petitRetrieval.retrieval import Retrieval
+from petitRetrieval.corner_plots import CornerPlot
+from petitRetrieval.PT_envelopes import return_PT_envelopes, plot_PT
+from petitRetrieval.master_retrieval_model import retrieval_model_plain, calc_MMW
+from petitRetrieval.rebin_give_width import rebin_give_width as rgw
+from petitRetrieval.util import Surf_To_Meas
+from petitRetrieval.rebin_give_width import rebin_give_width as rgw
 
+# Necessary for IO and running multinest
 import pymultinest
 import numpy as np
 from astropy.io import ascii,fits
@@ -46,12 +51,12 @@ import time
 import json
 from matplotlib import pyplot as plt
 
+# PetitRadTrans for modelling
 from petitRADTRANS import Radtrans
-import master_retrieval_model as rm
 from petitRADTRANS import nat_cst as nc
-import rebin_give_width as rgw
-from scipy.interpolate import interp1d
 
+# Spectra interpolation
+from scipy.interpolate import interp1d
 sys.stdout.flush()
 start = time.time()
 
@@ -79,7 +84,7 @@ rt_object = Radtrans(line_species=LINE_SPECIES, \
                     mode='c-k', \
                     wlen_bords_micron=WLEN)
 rt_object.setup_opa_structure(p)
-#wlen, flux_nu = rm.retrieval_model_plain(rt_object, temp_params, R_pl, ab_metals)
+#wlen, flux_nu = retrieval_model_plain(rt_object, temp_params, R_pl, ab_metals)
 
 # Read in data and convert to CGS
 data = Data(observation_files,
@@ -196,7 +201,7 @@ for i,line in enumerate(LINE_SPECIES):
 
 
 ## compute model for retrieved results ##
-wlen, flux_nu = rm.retrieval_model_plain(rt_object, temp_params, ab_metals)
+wlen, flux_nu = retrieval_model_plain(rt_object, temp_params, ab_metals)
 flux_nu = Surf_To_Meas(flux_nu,temp_params['R_pl'],temp_params['D_pl'])
 output = Table([wlen,flux_nu],names = ['wavelength','flux_nu'])
 ascii.write(output, RETRIEVAL_NAME + '/' + RETRIEVAL_NAME + "_BestFitModel.dat", overwrite=True)

@@ -1,6 +1,6 @@
 from petitRADTRANS import nat_cst as nc
 from scipy.interpolate import interp1d
-from util import *
+from petitRetrieval.util import *
 
 # Data Setup
 RETRIEVAL_NAME = 'WISE0855_ext_corr'
@@ -32,6 +32,7 @@ FIXED_PARAMS['R_star'] = 1.81*nc.r_sun
 FIXED_PARAMS['D_pl'] = 2.23 * nc.pc
 
 # Get host star spectrum to calculate F_pl / F_star later.
+# Only used if using a contrast measurement.
 T_star = 6295.
 x = nc.get_PHOENIX_spec(T_star)
 fstar = interp1d(x[:,0], x[:,1])
