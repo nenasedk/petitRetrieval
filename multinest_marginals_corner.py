@@ -62,8 +62,8 @@ mask = weights > 1e-4
 corner.corner(data[mask,:], weights=weights[mask], bins = 30,
 	      labels=parameters, show_titles=True, 
               range=arange, color = 'tab:blue',
-              plot_contours = True, 
-              truths = truths, truth_color = 'r')
+              plot_contours = True,
+              truths = truths, truth_color = 'r',levels = [0.5,0.95,0.99])
 plt.savefig(prefix + 'corner.pdf')
 plt.savefig(prefix + 'corner.png')
 plt.close()

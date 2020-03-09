@@ -187,7 +187,8 @@ retrieved_parameters_list = np.array(retrieved_parameters_list)
 temp_params = {}
 for i,param in enumerate(ATMOSPHERE):
     temp_params[param] = retrieved_parameters_list[i]
-
+for key,value in FIXED_PARAMS.items():
+    temp_params[key] = value
 # Make dictionary for log 'metal' abundances
 ab_metals = {}
 for i,line in enumerate(LINE_SPECIES):
@@ -195,8 +196,8 @@ for i,line in enumerate(LINE_SPECIES):
 
 
 ## compute model for retrieved results ##
-wlen, flux_nu = rm.retrieval_model_plain(rt_object, temp_params, R_pl, ab_metals)
-flux_nu = Surf_To_Meas(flux_nu,R_pl,D_pl)
+wlen, flux_nu = rm.retrieval_model_plain(rt_object, temp_params, ab_metals)
+flux_nu = Surf_To_Meas(flux_nu,temp_params['R_pl'],temp_params['D_pl'])
 output = Table([wlen,flux_nu],names = ['wavelength','flux_nu'])
 ascii.write(output, RETRIEVAL_NAME + '/' + RETRIEVAL_NAME + "_BestFitModel.dat", overwrite=True)
 

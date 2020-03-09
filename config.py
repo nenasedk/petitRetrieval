@@ -3,8 +3,8 @@ from scipy.interpolate import interp1d
 from util import *
 
 # Data Setup
-RETRIEVAL_NAME = 'WISE0855_nofringe'
-INPUT_DIR = '/home/ipa/quanz/user_accounts/evertn/SimulatedObs/WISE0855_nofringe/jwst_spectra_nocorr/' # end with forward slash!
+RETRIEVAL_NAME = 'WISE0855_ext_corr'
+INPUT_DIR = '/home/ipa/quanz/user_accounts/evertn/SimulatedObs/WISE0855_extfringe/jwst_spectra_corr_band/' # end with forward slash!
 OUTPUT_DIR = '/home/ipa/quanz/user_accounts/evertn/AtmoRets/'
 
 # Observation file format:
