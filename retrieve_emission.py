@@ -37,9 +37,8 @@ from petitRetrieval.retrieval import Retrieval
 from petitRetrieval.corner_plots import CornerPlot
 from petitRetrieval.PT_envelopes import return_PT_envelopes, plot_PT
 from petitRetrieval.master_retrieval_model import retrieval_model_plain, calc_MMW
-from petitRetrieval.rebin_give_width import rebin_give_width as rgw
 from petitRetrieval.util import Surf_To_Meas
-from petitRetrieval.rebin_give_width import rebin_give_width as rgw
+from petitRetrieval.rebin_give_width import rebin_give_width
 
 # Necessary for IO and running multinest
 import pymultinest

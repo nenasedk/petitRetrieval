@@ -13,7 +13,7 @@ from scipy.interpolate import interp1d
 from config import *
 from .util import show, Surf_To_Meas
 from .master_retrieval_model import retrieval_model_plain, calc_MMW
-from .rebin_give_width import rebin_give_width as rgw
+from .rebin_give_width import rebin_give_width
 
 from petitRADTRANS import Radtrans
 from petitRADTRANS import nat_cst as nc
@@ -247,9 +247,9 @@ class Retrieval:
         # Calculate log-likelihood
         for instrument in self.data.data_wlen.keys():
             # Rebin model to observation
-            flux_rebinned = rgw.rebin_give_width(wlen, flux_sq, \
-                                                 self.data.data_wlen[instrument],\
-                                                 self.data.data_wlen_bins[instrument])
+            flux_rebinned = rebin_give_width(wlen, flux_sq, \
+                                             self.data.data_wlen[instrument],\
+                                             self.data.data_wlen_bins[instrument])
             if self.plotting:
                 plt.errorbar(self.data.data_wlen[instrument], \
                              self.data.data_flux_nu[instrument], \
