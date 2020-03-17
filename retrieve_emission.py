@@ -61,7 +61,7 @@ start = time.time()
 # Ensure output directories exist, and change to output dir to shorten path name
 # Multinest has a 100 char limit for paths (recently updated to 1000?)
 if not os.path.exists(OUTPUT_DIR + RETRIEVAL_NAME + "/"):
-    os.mkdir(OUTPUT_DIR + RETRIEVAL_NAME + "/",exist_ok=True)
+    os.mkdir(OUTPUT_DIR + RETRIEVAL_NAME + "/")
 if not os.path.isfile(OUTPUT_DIR + RETRIEVAL_NAME + "/" + 'ev.dat'):
     f = open(OUTPUT_DIR  + RETRIEVAL_NAME + "/"+ 'ev.dat','w+')
     f.close()

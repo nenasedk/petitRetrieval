@@ -34,7 +34,8 @@ a = pymultinest.Analyzer(n_params = n_params, outputfiles_basename = prefix)
 s = a.get_stats()
 
 json.dump(s, open(prefix + 'stats.json', 'w'), indent=4)
-truths = [None,0.3,250.,3.4,None,None,4.0,None,-15,-3.3,-3.5,-2.5,-14,-9.,None,None]
+#truths = [None,0.3,250.,3.4,None,None,4.0,None,-15,-3.3,-3.5,-2.5,-14,-9.,None,None]
+truths = [-0.523,900.0,1.26,0.01,4.25,-2.,-7.,-3.,-2.52,-5.0,-5.0,-numpy.inf,-8.0,-numpy.inf]
 widths = []
 print('  marginal likelihood:')
 print('    ln Z = %.1f +- %.1f' % (s['global evidence'], s['global evidence error']))
@@ -55,7 +56,7 @@ for p, m in zip(parameters, s['marginals']):
 print('creating marginal plot ...')
 data = a.get_data()[:,2:]
 weights = a.get_data()[:,0]
-arange = numpy.ones(16,dtype = numpy.float64) * 0.9999995
+arange = numpy.ones(14,dtype = numpy.float64) * 0.9999995
 #mask = weights.cumsum() > 1e-5
 mask = weights > 1e-4
 

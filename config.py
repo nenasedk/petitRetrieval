@@ -15,7 +15,7 @@ observation_files['MIRIMRS'] = 'combined_cal_spectra.dat'
 
 # Pymultinest and Verbosity Parameters
 PLOTTING = False # (not used, seems to break multinest)
-LIVE = 500
+LIVE = 1500
 WRITE_THRESHOLD = 200
 
 # Wavelength range of observations, fixed parameters that will not be retrieved

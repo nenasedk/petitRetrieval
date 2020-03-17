@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+from config import *
 
 from petitRADTRANS import nat_cst as nc
 def plot_PT(envelopes,outputdir,filename):   
@@ -47,13 +48,10 @@ def return_PT_envelopes(samples, \
     try:
         if not true_values.any() == None:
             temp_params_input = {}
-            temp_params_input['log_delta'] = true_values[0]
-            temp_params_input['log_gamma'] = true_values[1]
-            temp_params_input['t_int'] = true_values[2]
-            temp_params_input['t_equ'] = true_values[3]
-            temp_params_input['log_p_trans'] = true_values[4]
-            temp_params_input['alpha'] = true_values[5]
-
+            for i,key in enumerate(ATMOSPHERE):
+                temp_params_input[key] =true_values[i]
+            for key,value in FIXED_PARAMS.items():
+                temp_params_input[key] = value
             # Compute inputinal input P-T profile 
             p, temp_input = nc.make_press_temp(temp_params_input)
     except:
@@ -92,12 +90,10 @@ def return_PT_envelopes(samples, \
             #    print(str(i_start+1)+'\r',)
             i_start += 1
             temp_params = {}
-            temp_params['log_delta'] = params[0]
-            temp_params['log_gamma'] = params[1]
-            temp_params['t_int'] = params[2]
-            temp_params['t_equ'] = params[3]
-            temp_params['log_p_trans'] = params[4]
-            temp_params['alpha'] = params[5]
+            for i,key in enumerate(ATMOSPHERE):
+                temp_params[key] = params[i]
+            for key,value in FIXED_PARAMS.items():
+                temp_params[key] = value
             p, temp = nc.make_press_temp(temp_params)
 
             if (np.max(temp) < 15000) and (np.min(temp) > 0.):
