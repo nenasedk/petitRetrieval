@@ -1,4 +1,5 @@
 import numpy as np
+from shutil import copyfile
 from spectres import spectres
 class Data:
     def __init__(self,
@@ -67,4 +68,11 @@ class Data:
                          self.data_flux_nu[name],self.data_flux_nu_error[name])
             self.data_wlen[name] = new_wlen_bins
             print(name + "after" + str(len(self.data_wlen[name])))
-
+    def saveData(self):
+        if self.output_directory == "":
+            return
+        if not self.output_directory.endswith("/"):
+            self.output_directory += "/"
+        for key,value in self.observation_files.items():
+            copyfile(self.data_directory + value,self.output_directory + value)
+        

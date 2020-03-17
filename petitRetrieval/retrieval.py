@@ -184,10 +184,11 @@ class Retrieval:
         
         # Alpha should not be smaller than -1, this
         # would lead to negative temperatures!
-        if temp_params['alpha'] < -1:
-            if self.diagnostics:
-                print("Alpha too small!")
-            return -np.inf
+        if 'alpha' in temp_params.keys():
+            if temp_params['alpha'] < -1:
+                if self.diagnostics:
+                    print("Alpha too small!")
+                return -np.inf
         
         for key in temp_params.keys():
             # Fixed parameters aren't in the prior dictionary

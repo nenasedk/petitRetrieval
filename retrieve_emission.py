@@ -58,19 +58,21 @@ from petitRADTRANS import nat_cst as nc
 from scipy.interpolate import interp1d
 sys.stdout.flush()
 start = time.time()
-
+# Ensure output directories exist, and change to output dir to shorten path name
+# Multinest has a 100 char limit for paths (recently updated to 1000?)
+if not os.path.exists(OUTPUT_DIR + RETRIEVAL_NAME + "/"):
+    os.mkdir(OUTPUT_DIR + RETRIEVAL_NAME + "/",exist_ok=True)
+if not os.path.isfile(OUTPUT_DIR + RETRIEVAL_NAME + "/" + 'ev.dat'):
+    f = open(OUTPUT_DIR  + RETRIEVAL_NAME + "/"+ 'ev.dat','w+')
+    f.close()
+    
 ### Create and setup radiative transfer object
 # Create random P-T profile to create RT arrays of the Radtrans object.
 temp_params = {}
-temp_params['log_delta'] = -6.
-temp_params['log_gamma'] = np.log10(0.4)
-temp_params['t_int'] = 750.
-temp_params['t_equ'] = 0.
-temp_params['log_p_trans'] = -3.
-temp_params['alpha'] = 0.
-temp_params['log_g'] = 3.0
-temp_params['log_P0'] = 1.
-temp_params['R_pl'] = 1.
+for key in ATMOSPHERE:
+    temp_params[key] = PRIORS[key](np.random.rand())
+for key,value in FIXED_PARAMS.items():
+    temp_params[key] = value
 ab_metals={}
 for metal in LINE_SPECIES:
     ab_metals[metal] = -5
@@ -83,23 +85,15 @@ rt_object = Radtrans(line_species=LINE_SPECIES, \
                     mode='c-k', \
                     wlen_bords_micron=WLEN)
 rt_object.setup_opa_structure(p)
-#wlen, flux_nu = retrieval_model_plain(rt_object, temp_params, R_pl, ab_metals)
 
 # Read in data and convert to CGS
 data = Data(observation_files,
             RETRIEVAL_NAME,
             INPUT_DIR,
             OUTPUT_DIR + RETRIEVAL_NAME + '/')
-#data.rebinData(wlen)
-# Ensure output directories exist, and change to output dir to shorten path name
-# Multinest has a 100 char limit for paths (recently updated to 1000?)
-if not os.path.exists(OUTPUT_DIR + RETRIEVAL_NAME + "/"):
-    os.mkdir(OUTPUT_DIR + RETRIEVAL_NAME + "/")
-if not os.path.isfile(OUTPUT_DIR + RETRIEVAL_NAME + "/" + 'ev.dat'):
-    f = open(OUTPUT_DIR  + RETRIEVAL_NAME + "/"+ 'ev.dat','w+')
-    f.close()
-os.chdir(OUTPUT_DIR)
 
+os.chdir(OUTPUT_DIR)
+data.saveData()
 # Setup Priors
 prior = Prior(RANGE,PRIORS)
 
