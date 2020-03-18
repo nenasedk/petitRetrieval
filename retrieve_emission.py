@@ -195,7 +195,7 @@ for i,line in enumerate(LINE_SPECIES):
 
 ## compute model for retrieved results ##
 wlen, flux_nu = retrieval_model_plain(rt_object, temp_params, ab_metals)
-flux_nu = Surf_To_Meas(flux_nu,temp_params['R_pl'],temp_params['D_pl'])
+flux_nu = Surf_To_Meas(flux_nu,temp_params['R_pl']*nc.r_jup_mean,temp_params['D_pl'])
 output = Table([wlen,flux_nu],names = ['wavelength','flux_nu'])
 ascii.write(output, RETRIEVAL_NAME + '/' + RETRIEVAL_NAME + "_BestFitModel.dat", overwrite=True)
 
