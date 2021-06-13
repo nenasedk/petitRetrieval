@@ -1,5 +1,7 @@
 # petitRadTrans Atmospheric Retrieval
 
+Go check out https://gitlab.com/mauricemolli/petitRADTRANS/-/tree/retrieval/petitRADTRANS, where a retrieval package has been built into pRT!
+
 This package is based around the examplar emission retrieval from the petitRadTrans paper [Molliere 2019, https://arxiv.org/abs/1904.11504]. 
 
 It has been modified to be more modular and to use a nested sampling approach for sampling the parameter space, 
